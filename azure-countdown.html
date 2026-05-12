@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Azure Update Countdown // Forsaken</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ------------- THEME TOKENS (phase-reactive) ------------- */
+  :root {
+    --bg-0: #07040f;
+    --bg-1: #0b0614;
+    --bg-2: #140a26;
+    --lavender: #b89cff;
+    --lavender-soft: #d4c2ff;
+    --azure: #4dc6ff;
+    --azure-deep: #1a7fff;
+    --magenta-warn: #ff4d8f;
+    --ink: #e7dcff;
+    --ink-dim: #8a7db0;
+    --panel: rgba(18, 10, 36, 0.55);
+    --panel-stroke: rgba(184, 156, 255, 0.18);
+    --glow: 0 0 24px rgba(184, 156, 255, 0.35);
+    --glow-strong: 0 0 48px rgba(184, 156, 255, 0.55);
+    --pulse-speed: 4s;
+    --particle-speed: 60s;
+  }
+
+  body.phase-mid {
+    --lavender: #c1a8ff;
+    --azure: #5fd1ff;
+    --glow: 0 0 28px rgba(95, 209, 255, 0.4);
+    --pulse-speed: 3s;
+  }
+
+  body.phase-final {
+    --bg-1: #14081a;
+    --lavender: #ff6fb0;
+    --azure: #ff4d8f;
+    --magenta-warn: #ff2d6f;
+    --ink: #ffd9ec;
+    --glow: 0 0 32px rgba(255, 77, 143, 0.55);
+    --glow-strong: 0 0 64px rgba(255, 77, 143, 0.7);
+    --pulse-speed: 1.4s;
+  }
+
+  body.phase-event {
+    --bg-0: #021022;
+    --bg-1: #03143a;
+    --bg-2: #054a8c;
+    --lavender: #7fe0ff;
+    --lavender-soft: #c8f1ff;
+    --azure: #4dc6ff;
+    --ink: #eaf6ff;
+    --ink-dim: #7da9c9;
+    --panel: rgba(8, 36, 78, 0.6);
+    --panel-stroke: rgba(127, 224, 255, 0.35);
+    --glow: 0 0 32px rgba(77, 198, 255, 0.7);
+    --glow-strong: 0 0 80px rgba(77, 198, 255, 0.85);
+  }
+
+  /* ------------- BASE ------------- */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg-0);
+    color: var(--ink);
+    font-family: 'Space Mono', monospace;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(184, 156, 255, 0.12), transparent 60%),
+      radial-gradient(ellipse 60% 80% at 100% 100%, rgba(77, 198, 255, 0.08), transparent 60%),
+      radial-gradient(ellipse 60% 80% at 0% 100%, rgba(184, 156, 255, 0.06), transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    transition: background 1.6s ease, color 1.2s ease;
+    position: relative;
+  }
+
+  /* Scanline overlay — game UI feel */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.015) 0px,
+      rgba(255, 255, 255, 0.015) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 100;
+    mix-blend-mode: overlay;
+  }
+
+  /* Vignette */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  /* ------------- PARTICLE FIELD ------------- */
+  .particles {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--lavender);
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 6px currentColor;
+    animation: drift var(--particle-speed) linear infinite;
+  }
+  @keyframes drift {
+    0%   { transform: translate3d(0, 100vh, 0) scale(0.6); opacity: 0; }
+    10%  { opacity: 0.8; }
+    90%  { opacity: 0.4; }
+    100% { transform: translate3d(40px, -10vh, 0) scale(1.2); opacity: 0; }
+  }
+
+  /* Glitch flicker — only mid/final phases */
+  .glitch-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 98;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,77,143,0.1) 50%, transparent 100%);
+  }
+  body.phase-mid .glitch-overlay,
+  body.phase-final .glitch-overlay {
+    animation: glitch-flicker 9s infinite;
+  }
+  body.phase-final .glitch-overlay {
+    animation-duration: 4s;
+  }
+  @keyframes glitch-flicker {
+    0%, 92%, 100% { opacity: 0; transform: translateX(0); }
+    93% { opacity: 0.6; transform: translateX(-3px); }
+    94% { opacity: 0.2; transform: translateX(2px); }
+    95% { opacity: 0.5; transform: translateX(-1px); }
+    96% { opacity: 0; }
+  }
+
+  /* ------------- LAYOUT ------------- */
+  .wrap {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* ------------- HEADER ------------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 40px;
+    border-bottom: 1px solid var(--panel-stroke);
+    margin-bottom: 64px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    position: relative;
+  }
+  .brand-mark svg { display: block; }
+  .brand-mark::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--lavender) 0%, transparent 70%);
+    opacity: 0.4;
+    animation: pulse var(--pulse-speed) ease-in-out infinite;
+    z-index: -1;
+  }
+  .brand-text {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.32em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .brand-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.5em;
+    color: var(--ink-dim);
+    margin-top: 2px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.15); }
+  }
+
+  /* ------------- BUTTONS ------------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 22px;
+    background: rgba(184, 156, 255, 0.06);
+    border: 1px solid var(--panel-stroke);
+    color: var(--ink);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(184,156,255,0.15) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  .btn:hover {
+    border-color: var(--lavender);
+    box-shadow: var(--glow);
+    color: var(--lavender-soft);
+    transform: translateY(-1px);
+  }
+  .btn:hover::before { transform: translateX(100%); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, rgba(184,156,255,0.2), rgba(77,198,255,0.2));
+    border-color: var(--lavender);
+  }
+  .btn-discord {
+    border-color: rgba(88, 101, 242, 0.5);
+  }
+  .btn-discord svg { width: 16px; height: 16px; }
+
+  /* ------------- HERO TITLE ------------- */
+  .hero-title {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.6em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    opacity: 0.75;
+  }
+  .hero-eyebrow .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--lavender);
+    border-radius: 50%;
+    margin: 0 12px 2px;
+    box-shadow: 0 0 8px currentColor;
+    animation: pulse var(--pulse-speed) ease-in-out infinite;
+  }
+  h1.hero-h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 7vw, 5.2rem);
+    letter-spacing: 0.04em;
+    line-height: 0.95;
+    background: linear-gradient(180deg, var(--ink) 0%, var(--lavender) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-transform: uppercase;
+    filter: drop-shadow(0 0 30px rgba(184, 156, 255, 0.4));
+  }
+  .hero-tag {
+    margin-top: 16px;
+    font-size: 0.78rem;
+    letter-spacing: 0.3em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+
+  /* ------------- COUNTDOWN ------------- */
+  .countdown-frame {
+    margin: 56px auto 0;
+    max-width: 920px;
+    background: var(--panel);
+    border: 1px solid var(--panel-stroke);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 44px 32px 36px;
+    position: relative;
+    border-radius: 2px;
+    box-shadow: var(--glow);
+    transition: box-shadow 0.8s ease, border-color 0.8s ease;
+  }
+  /* Corner brackets */
+  .countdown-frame::before,
+  .countdown-frame::after,
+  .countdown-frame .corner-bl,
+  .countdown-frame .corner-br {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--lavender);
+  }
+  .countdown-frame::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .countdown-frame::after  { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+  .countdown-frame .corner-bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+  .countdown-frame .corner-br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+  .system-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.65rem;
+    letter-spacing: 0.32em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .system-bar .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--lavender);
+  }
+  .system-bar .live-dot {
+    width: 7px; height: 7px;
+    background: var(--lavender);
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+    animation: pulse var(--pulse-speed) ease-in-out infinite;
+  }
+
+  .timer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .timer-cell {
+    text-align: center;
+    padding: 18px 8px 14px;
+    background: linear-gradient(180deg, rgba(184,156,255,0.06), rgba(184,156,255,0.01));
+    border: 1px solid var(--panel-stroke);
+    position: relative;
+  }
+  .timer-num {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    line-height: 1;
+    color: var(--ink);
+    text-shadow: 0 0 20px rgba(184, 156, 255, 0.5);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  body.phase-final .timer-num {
+    text-shadow: 0 0 24px var(--magenta-warn);
+    animation: flicker var(--pulse-speed) ease-in-out infinite;
+  }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+  .timer-label {
+    margin-top: 8px;
+    font-size: 0.62rem;
+    letter-spacing: 0.4em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+
+  .phase-message {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-size: clamp(0.95rem, 2vw, 1.25rem);
+    letter-spacing: 0.32em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    margin: 8px 0 28px;
+    min-height: 1.4em;
+    transition: color 0.6s ease, opacity 0.4s ease;
+  }
+
+  /* Progress bar */
+  .progress-section { margin-top: 8px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .progress-meta .pct { color: var(--lavender); font-family: 'Orbitron', sans-serif; }
+  .progress-track {
+    height: 8px;
+    background: rgba(184, 156, 255, 0.08);
+    border: 1px solid var(--panel-stroke);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--lavender) 0%, var(--azure) 100%);
+    box-shadow: 0 0 16px var(--lavender);
+    position: relative;
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .progress-fill::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    width: 30px; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5));
+  }
+  body.phase-final .progress-fill {
+    animation: pulse-bar var(--pulse-speed) ease-in-out infinite;
+  }
+  @keyframes pulse-bar {
+    0%, 100% { box-shadow: 0 0 16px var(--lavender); }
+    50% { box-shadow: 0 0 36px var(--magenta-warn); }
+  }
+
+  /* ------------- SECTION HEADER ------------- */
+  .section-head {
+    margin: 96px 0 28px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .section-head .ix {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    color: var(--lavender);
+    letter-spacing: 0.2em;
+  }
+  .section-head h2 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .section-head .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--panel-stroke), transparent);
+  }
+
+  /* ------------- LOCKED PANELS ------------- */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 800px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-stroke);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 32px 28px;
+    position: relative;
+    overflow: hidden;
+    min-height: 320px;
+  }
+
+  .lockable .lock-content {
+    filter: blur(10px);
+    opacity: 0.55;
+    transition: filter 1.2s ease, opacity 1.2s ease;
+    pointer-events: none;
+  }
+  .lockable.unlocked .lock-content {
+    filter: blur(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: radial-gradient(circle at center, rgba(11,6,20,0.5), rgba(11,6,20,0.85));
+    transition: opacity 1.4s ease, transform 1.4s ease;
+    z-index: 5;
+  }
+  .lockable.unlocked .lock-overlay {
+    opacity: 0;
+    transform: scale(1.08);
+    pointer-events: none;
+  }
+  .lock-icon {
+    width: 56px;
+    height: 56px;
+    border: 1.5px solid var(--lavender);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(184,156,255,0.05);
+    box-shadow: var(--glow);
+    transition: transform 0.6s ease;
+  }
+  .lock-icon svg { width: 24px; height: 24px; }
+  .lockable.unlocked .lock-icon {
+    transform: rotate(20deg) scale(0.8);
+    opacity: 0;
+  }
+  .lock-tip {
+    font-size: 0.7rem;
+    letter-spacing: 0.32em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+  .lock-tip strong {
+    color: var(--lavender);
+    font-weight: 400;
+  }
+
+  .panel h3 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .panel .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.32em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .panel p {
+    color: var(--ink-dim);
+    line-height: 1.75;
+    font-size: 0.92rem;
+    margin-bottom: 14px;
+  }
+
+  /* Azure silhouette */
+  .azure-silhouette {
+    width: 100%;
+    height: 220px;
+    margin-bottom: 16px;
+    position: relative;
+    background:
+      radial-gradient(ellipse at center, rgba(184,156,255,0.25), transparent 70%);
+  }
+  .azure-silhouette svg {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+  }
+
+  .meta-list {
+    list-style: none;
+    margin-top: 14px;
+  }
+  .meta-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--panel-stroke);
+    font-size: 0.82rem;
+  }
+  .meta-list li:last-child { border-bottom: none; }
+  .meta-list .key {
+    color: var(--ink-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+  }
+  .meta-list .val {
+    color: var(--ink);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  /* ------------- INFO / LORE ------------- */
+  .lore-block {
+    margin-top: 24px;
+    padding: 28px;
+    background: linear-gradient(135deg, rgba(184,156,255,0.05), rgba(77,198,255,0.03));
+    border-left: 2px solid var(--lavender);
+  }
+  .lore-block p {
+    font-family: 'Cinzel', serif;
+    font-style: italic;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+  .lore-block p::before {
+    content: "❝";
+    font-size: 2rem;
+    color: var(--lavender);
+    margin-right: 8px;
+    vertical-align: -8px;
+  }
+
+  /* ------------- EVENT MODE ------------- */
+  .event-cta {
+    display: none;
+    margin-top: 36px;
+    padding: 36px 28px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(77,198,255,0.18), rgba(127,224,255,0.08));
+    border: 1px solid var(--azure);
+    box-shadow: var(--glow-strong);
+    position: relative;
+    overflow: hidden;
+  }
+  body.phase-event .event-cta { display: block; animation: event-rise 1.2s ease both; }
+  @keyframes event-rise {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .event-cta h2 {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #fff, var(--azure));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 30px var(--azure));
+  }
+  .event-cta .event-sub {
+    font-size: 0.78rem;
+    letter-spacing: 0.4em;
+    color: var(--lavender-soft);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .event-cta .btn-row {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .event-cta .btn {
+    border-color: var(--azure);
+    background: rgba(77, 198, 255, 0.12);
+  }
+  .event-cta .btn:hover { box-shadow: 0 0 28px var(--azure); }
+
+  /* ------------- SHARE BANNER ------------- */
+  .share-banner {
+    display: none;
+    margin: 24px auto 0;
+    max-width: 920px;
+    padding: 12px 18px;
+    background: rgba(184,156,255,0.08);
+    border: 1px solid var(--panel-stroke);
+    text-align: center;
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    backdrop-filter: blur(10px);
+  }
+  .share-banner.show { display: block; animation: event-rise 0.8s ease both; }
+
+  /* ------------- FOOTER ------------- */
+  footer {
+    margin-top: 96px;
+    padding-top: 32px;
+    border-top: 1px solid var(--panel-stroke);
+  }
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .share-cluster { display: flex; gap: 10px; flex-wrap: wrap; }
+  .credits {
+    font-size: 0.65rem;
+    letter-spacing: 0.32em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+  .credits span { color: var(--lavender); }
+
+  /* ------------- TOAST ------------- */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    padding: 12px 22px;
+    background: rgba(11,6,20,0.95);
+    border: 1px solid var(--lavender);
+    color: var(--lavender);
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    box-shadow: var(--glow);
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ------------- ENTRANCE ANIMATIONS ------------- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: reveal 1s ease forwards;
+  }
+  .reveal-1 { animation-delay: 0.1s; }
+  .reveal-2 { animation-delay: 0.3s; }
+  .reveal-3 { animation-delay: 0.55s; }
+  .reveal-4 { animation-delay: 0.8s; }
+  @keyframes reveal {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ------------- RESPONSIVE ------------- */
+  @media (max-width: 600px) {
+    header { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .timer { gap: 8px; }
+    .timer-cell { padding: 14px 4px 10px; }
+    .countdown-frame { padding: 28px 18px 24px; }
+  }
+</style>
+</head>
+<body class="phase-early">
+
+<!-- particle field -->
+<div class="particles" id="particles"></div>
+<div class="glitch-overlay"></div>
+
+<div class="wrap">
+
+  <!-- ============== HEADER ============== -->
+  <header class="reveal reveal-1">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 38 38" fill="none">
+          <path d="M19 3 L33 19 L19 35 L5 19 Z" stroke="currentColor" stroke-width="1.5" fill="none" style="color: var(--lavender);"/>
+          <path d="M19 9 L27 19 L19 29 L11 19 Z" fill="currentColor" style="color: var(--lavender); opacity: 0.4;"/>
+          <circle cx="19" cy="19" r="2.5" fill="currentColor" style="color: var(--azure);"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-text">Forsaken</div>
+        <div class="brand-sub">// system protocol</div>
+      </div>
+    </div>
+    <a href="https://discord.gg/" target="_blank" rel="noopener" class="btn btn-discord" id="discord-btn">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 4.07-3.47 8.03-3.1 11.95c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.44-4.53-.73-8.46-3.1-11.95c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"/>
+      </svg>
+      Join the Forsaken Discord
+    </a>
+  </header>
+
+  <!-- ============== HERO + COUNTDOWN ============== -->
+  <section>
+    <div class="hero-title reveal reveal-2">
+      <div class="hero-eyebrow">
+        <span class="dot"></span>
+        Incoming Transmission
+        <span class="dot"></span>
+      </div>
+      <h1 class="hero-h1">Azure<br>Convergence</h1>
+      <div class="hero-tag">May 30 · 18:00 Local Time</div>
+    </div>
+
+    <div class="share-banner" id="share-banner">
+      ◇ You're joining others waiting for Azure ◇
+    </div>
+
+    <div class="countdown-frame reveal reveal-3">
+      <span class="corner-bl"></span>
+      <span class="corner-br"></span>
+
+      <div class="system-bar">
+        <span class="live"><span class="live-dot"></span>System Online</span>
+        <span id="system-status">Tracking · Locked</span>
+      </div>
+
+      <div class="timer">
+        <div class="timer-cell">
+          <div class="timer-num" id="t-days">00</div>
+          <div class="timer-label">Days</div>
+        </div>
+        <div class="timer-cell">
+          <div class="timer-num" id="t-hours">00</div>
+          <div class="timer-label">Hours</div>
+        </div>
+        <div class="timer-cell">
+          <div class="timer-num" id="t-mins">00</div>
+          <div class="timer-label">Minutes</div>
+        </div>
+        <div class="timer-cell">
+          <div class="timer-num" id="t-secs">00</div>
+          <div class="timer-label">Seconds</div>
+        </div>
+      </div>
+
+      <div class="phase-message" id="phase-message">Azure systems aligning…</div>
+
+      <div class="progress-section">
+        <div class="progress-meta">
+          <span id="progress-label">Stabilizing timeline…</span>
+          <span class="pct"><span id="progress-pct">0.00</span>%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event-mode CTA -->
+    <div class="event-cta" id="event-cta">
+      <h2>Azure Has Arrived</h2>
+      <div class="event-sub">// system update live</div>
+      <div class="btn-row">
+        <a href="https://www.roblox.com/" target="_blank" rel="noopener" class="btn btn-primary">▶ Play on Roblox</a>
+        <a href="#info-section" class="btn">📜 View Update Details</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== AZURE REVEAL (lockable) ============== -->
+  <div class="section-head">
+    <span class="ix">01 //</span>
+    <h2>The Reveal</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel lockable" id="reveal-panel">
+      <div class="lock-overlay">
+        <div class="lock-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--lavender);">
+            <rect x="5" y="11" width="14" height="10" rx="1"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+        </div>
+        <div class="lock-tip"><strong>Locked</strong> · Requires System Convergence</div>
+      </div>
+      <div class="lock-content">
+        <h3>Azure</h3>
+        <div class="subtitle">// classification: unknown</div>
+        <div class="azure-silhouette">
+          <svg viewBox="0 0 200 200" fill="none">
+            <defs>
+              <radialGradient id="azureGlow">
+                <stop offset="0%" stop-color="var(--lavender)" stop-opacity="0.9"/>
+                <stop offset="60%" stop-color="var(--azure)" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </radialGradient>
+            </defs>
+            <circle cx="100" cy="100" r="60" fill="url(#azureGlow)"/>
+            <path d="M100 30 L130 100 L100 170 L70 100 Z" fill="none" stroke="var(--lavender)" stroke-width="1.5" opacity="0.7"/>
+            <path d="M100 50 L120 100 L100 150 L80 100 Z" fill="var(--lavender)" opacity="0.2"/>
+            <circle cx="100" cy="100" r="6" fill="var(--azure)"/>
+            <circle cx="100" cy="100" r="14" fill="none" stroke="var(--azure)" stroke-width="1" opacity="0.6"/>
+            <circle cx="100" cy="100" r="24" fill="none" stroke="var(--lavender)" stroke-width="0.5" opacity="0.3"/>
+          </svg>
+        </div>
+        <p>A presence has been detected at the edge of the system. Pattern recognition fails. Energy signature unprecedented.</p>
+        <p>Identity will resolve at synchronization.</p>
+      </div>
+    </div>
+
+    <div class="panel lockable" id="details-panel">
+      <div class="lock-overlay">
+        <div class="lock-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--lavender);">
+            <rect x="5" y="11" width="14" height="10" rx="1"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+        </div>
+        <div class="lock-tip"><strong>Sealed</strong> · Patch Notes Pending</div>
+      </div>
+      <div class="lock-content">
+        <h3>Patch ⟨ Azure ⟩</h3>
+        <div class="subtitle">// version pending</div>
+        <ul class="meta-list">
+          <li><span class="key">Build</span><span class="val">AZ.001</span></li>
+          <li><span class="key">Type</span><span class="val">Major</span></li>
+          <li><span class="key">Region</span><span class="val">Global</span></li>
+          <li><span class="key">Window</span><span class="val">May 30 · 18:00</span></li>
+          <li><span class="key">Servers</span><span class="val">All</span></li>
+          <li><span class="key">Status</span><span class="val" id="status-val">Pending</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== INFO / LORE ============== -->
+  <div class="section-head" id="info-section">
+    <span class="ix">02 //</span>
+    <h2>Transmission</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="panel">
+    <h3>What's Coming</h3>
+    <div class="subtitle">// hype log · entry 001</div>
+    <p>The system has been quiet for too long. What began as routine telemetry has become something else — a slow, deliberate convergence of signals pointing toward a single moment. May 30th. Eighteen hundred hours. The hour Azure arrives.</p>
+    <p>Operators have reported anomalies in the lower layers of the grid. Voices in the static. Patterns that were never authored. The Forsaken know this isn't another patch — it's a turning of the page.</p>
+
+    <div class="lore-block">
+      <p>When the timer hits zero, do not look away. The first to witness Azure remember it differently than those who arrive late.</p>
+    </div>
+  </div>
+
+  <!-- ============== FOOTER ============== -->
+  <footer>
+    <div class="footer-row">
+      <div class="share-cluster">
+        <button class="btn" id="share-btn">⎘ Share Countdown</button>
+        <button class="btn" id="copy-link-btn">⎌ Copy Link</button>
+        <a href="https://twitter.com/intent/tweet?text=Azure%20update%20drops%20soon%20%E2%80%94%20join%20the%20countdown!" target="_blank" rel="noopener" class="btn">𝕏 Post</a>
+      </div>
+      <div class="credits">Fan-made · For the <span>Forsaken</span></div>
+    </div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+  // ============ TARGET ============
+  // May 30, 2026, 18:00 local time
+  const TARGET = new Date(2026, 4, 30, 18, 0, 0); // month is 0-indexed: 4 = May
+  const ORIGIN_MS = 14 * 24 * 60 * 60 * 1000; // progress bar baseline: 14 days before target
+  const PROGRESS_START = TARGET.getTime() - ORIGIN_MS;
+
+  // ============ DOM ============
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    days: $('t-days'),
+    hours: $('t-hours'),
+    mins: $('t-mins'),
+    secs: $('t-secs'),
+    phaseMsg: $('phase-message'),
+    progressFill: $('progress-fill'),
+    progressLabel: $('progress-label'),
+    progressPct: $('progress-pct'),
+    sysStatus: $('system-status'),
+    statusVal: $('status-val'),
+    revealPanel: $('reveal-panel'),
+    detailsPanel: $('details-panel'),
+    eventCta: $('event-cta'),
+    body: document.body,
+    toast: $('toast'),
+    shareBanner: $('share-banner'),
+  };
+
+  // ============ PHASE COPY ============
+  const PHASE_MESSAGES = {
+    early: [
+      'Azure systems aligning…',
+      'Something is forming…',
+      'Carrier wave detected…',
+      'Pattern stabilizing…',
+    ],
+    mid: [
+      'Update approaching…',
+      'Azure signal detected…',
+      'Synchronization imminent…',
+      'Resonance climbing…',
+    ],
+    final: [
+      'Critical convergence…',
+      'SYSTEM WARNING: EVENT IMMINENT',
+      'Final synchronization…',
+      'Hold the line…',
+    ],
+    event: [
+      '◆ Azure Has Arrived ◆',
+    ],
+  };
+
+  function progressLabel(pct) {
+    if (pct < 40)  return 'Stabilizing timeline…';
+    if (pct < 75)  return 'Azure systems initializing…';
+    if (pct < 95)  return 'Critical convergence detected…';
+    if (pct < 100) return 'Final synchronization…';
+    return 'Synchronization complete';
+  }
+
+  // ============ PHASE ENGINE ============
+  function getPhase(msLeft) {
+    if (msLeft <= 0)              return 'event';
+    if (msLeft <= 24 * 3600e3)    return 'final';
+    if (msLeft <= 7 * 86400e3)    return 'mid';
+    return 'early';
+  }
+
+  let currentPhase = null;
+  let msgIndex = 0;
+
+  function applyPhase(phase) {
+    if (phase === currentPhase) return;
+    els.body.classList.remove('phase-early', 'phase-mid', 'phase-final', 'phase-event');
+    els.body.classList.add('phase-' + phase);
+    currentPhase = phase;
+    msgIndex = 0;
+
+    if (phase === 'event') {
+      // unlock everything
+      els.revealPanel.classList.add('unlocked');
+      els.detailsPanel.classList.add('unlocked');
+      els.statusVal.textContent = 'Live';
+      els.sysStatus.textContent = 'Convergence · Achieved';
+    } else {
+      els.sysStatus.textContent = (
+        phase === 'final' ? 'Critical · Convergence Near' :
+        phase === 'mid'   ? 'Stable · Signal Climbing' :
+                            'Tracking · Locked'
+      );
+    }
+  }
+
+  function rotateMessage() {
+    const pool = PHASE_MESSAGES[currentPhase] || PHASE_MESSAGES.early;
+    msgIndex = (msgIndex + 1) % pool.length;
+    els.phaseMsg.style.opacity = '0';
+    setTimeout(() => {
+      els.phaseMsg.textContent = pool[msgIndex];
+      els.phaseMsg.style.opacity = '1';
+    }, 350);
+  }
+
+  // ============ TICK ============
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function tick() {
+    const now = Date.now();
+    const msLeft = TARGET.getTime() - now;
+
+    // phase
+    const phase = getPhase(msLeft);
+    applyPhase(phase);
+
+    // timer values
+    if (msLeft > 0) {
+      const totalSec = Math.floor(msLeft / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hours = Math.floor((totalSec % 86400) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      els.days.textContent = pad(days);
+      els.hours.textContent = pad(hours);
+      els.mins.textContent = pad(mins);
+      els.secs.textContent = pad(secs);
+    } else {
+      els.days.textContent = '00';
+      els.hours.textContent = '00';
+      els.mins.textContent = '00';
+      els.secs.textContent = '00';
+      els.phaseMsg.textContent = PHASE_MESSAGES.event[0];
+    }
+
+    // progress bar — from PROGRESS_START → TARGET
+    const span = TARGET.getTime() - PROGRESS_START;
+    const elapsed = Math.max(0, now - PROGRESS_START);
+    const pct = Math.min(100, (elapsed / span) * 100);
+    els.progressFill.style.width = pct + '%';
+    els.progressPct.textContent = pct.toFixed(2);
+    els.progressLabel.textContent = progressLabel(pct);
+  }
+
+  // initial tick + interval
+  tick();
+  setInterval(tick, 1000);
+  setInterval(rotateMessage, 4500);
+
+  // ============ SHARE / COPY ============
+  function showToast(text) {
+    els.toast.textContent = text;
+    els.toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => els.toast.classList.remove('show'), 2200);
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch {}
+      document.body.removeChild(ta);
+      return true;
+    }
+  }
+
+  $('share-btn').addEventListener('click', async () => {
+    const url = window.location.href.split('?')[0] + '?from=share';
+    const text = `Azure update drops soon — join the countdown! ${url}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Azure Update Countdown', text, url });
+        return;
+      } catch { /* user cancelled — fall through to copy */ }
+    }
+    await copyToClipboard(text);
+    showToast('Share message copied');
+  });
+
+  $('copy-link-btn').addEventListener('click', async () => {
+    const url = window.location.href.split('?')[0] + '?from=share';
+    await copyToClipboard(url);
+    showToast('Link copied');
+  });
+
+  // share-banner if visitor came via share link
+  if (new URLSearchParams(window.location.search).get('from') === 'share') {
+    els.shareBanner.classList.add('show');
+  }
+
+  // ============ PARTICLES ============
+  (function initParticles() {
+    const container = $('particles');
+    const COUNT = 38;
+    for (let i = 0; i < COUNT; i++) {
+      const p = document.createElement('span');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDelay = (-Math.random() * 60) + 's';
+      p.style.animationDuration = (40 + Math.random() * 50) + 's';
+      const size = 1 + Math.random() * 2.5;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      // alternate hues
+      if (i % 4 === 0) p.style.background = 'var(--azure)';
+      container.appendChild(p);
+    }
+  })();
+</script>
+</body>
+</html>
