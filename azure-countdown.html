@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Azure Update Countdown // Forsaken</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com"> /* fonts borrowed from google */
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -15,38 +15,38 @@
     --bg-2: #140a26;
     --lavender: #b89cff;
     --lavender-soft: #d4c2ff;
-    --azure: #4dc6ff;
-    --azure-deep: #1a7fff;
-    --magenta-warn: #ff4d8f;
-    --ink: #e7dcff;
-    --ink-dim: #8a7db0;
-    --panel: rgba(18, 10, 36, 0.55);
-    --panel-stroke: rgba(184, 156, 255, 0.18);
-    --glow: 0 0 24px rgba(184, 156, 255, 0.35);
-    --glow-strong: 0 0 48px rgba(184, 156, 255, 0.55);
-    --pulse-speed: 4s;
-    --particle-speed: 60s;
+    --azure: #4dc6ff;/*color used for beginning/early phase of timer*/
+    --azure-deep: #1a7fff;/*color used for mid phase of timer*/
+    --magenta-warn: #ff4d8f; /* color used for final phase of timer.*/
+    --ink: #e7dcff;/*makes the important text stand out, used for the timer and headers*/
+    --ink-dim: #8a7db0; /*makes the less important texts dimmer*/
+    --panel: rgba(18, 10, 36, 0.55); /*for the cards and panels, makes it translucent*/
+    --panel-stroke: rgba(184, 156, 255, 0.18); /* strokes for panel and borders, used for hover on buttons*./
+    --glow: 0 0 24px rgba(184, 156, 255, 0.35); /* the base glow for every item */
+    --glow-strong: 0 0 48px rgba(184, 156, 255, 0.55); /* makes the glowing more intense for later use*/
+    --pulse-speed: 4s; /* speed for the glowing effect / pulsing */
+    --particle-speed: 60s; /*speed for the particles in the background*/
   }
 
-  body.phase-mid {
-    --lavender: #c1a8ff;
-    --azure: #5fd1ff;
-    --glow: 0 0 28px rgba(95, 209, 255, 0.4);
-    --pulse-speed: 3s;
+  body.phase-mid { /* makes the colors of the website shift to be more intense, glows more, and has a "glitch" effect. */
+    --lavender: #c1a8ff; /*makes the body mid phase more lavender*/
+    --azure: #5fd1ff; /*makes the body mid phase more azure*/
+    --glow: 0 0 28px rgba(95, 209, 255, 0.4); /*makes the glow more intense during midphase compared to early phase of timer*/
+    --pulse-speed: 3s; /*glowing pulses slightly faster than early phase*/
   }
 
-  body.phase-final {
-    --bg-1: #14081a;
-    --lavender: #ff6fb0;
-    --azure: #ff4d8f;
-    --magenta-warn: #ff2d6f;
-    --ink: #ffd9ec;
-    --glow: 0 0 32px rgba(255, 77, 143, 0.55);
-    --glow-strong: 0 0 64px rgba(255, 77, 143, 0.7);
-    --pulse-speed: 1.4s;
+  body.phase-final { /*adds more glow, intenser colors and faster pulsing!!!!*/
+    --bg-1: #14081a;/*makes background dark*/
+    --lavender: #ff6fb0;/*keeps lavender to final phase*/
+    --azure: #ff4d8f;/*keeps azure color for final phase*/
+    --magenta-warn: #ff2d6f;/*uses magenta for important text during final phase*/
+    --ink: #ffd9ec;/*makes the text pop up clearer*/
+    --glow: 0 0 32px rgba(255, 77, 143, 0.55);/*stronger glow, brighter*/
+    --glow-strong: 0 0 64px rgba(255, 77, 143, 0.7);/*makes the glowing more intense*/
+    --pulse-speed: 1.4s;/*makes the pulsing faster for final phase*/
   }
 
-  body.phase-event {
+  body.phase-event {/*celebrates with bright blues and lavenders, more glowing :)*/
     --bg-0: #021022;
     --bg-1: #03143a;
     --bg-2: #054a8c;
@@ -62,24 +62,24 @@
   }
 
   /* ------------- BASE ------------- */
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; } /*resets all elements to the default sizes and removes margins and padding to decorate easier*/
 
-  html, body {
-    background: var(--bg-0);
-    color: var(--ink);
+  html, body { /*sets up base colors and fonts, makes the background cover the entire webpage*/
+    background: var(--bg-0);/*makes the color change by phase*/
+    color: var(--ink); /*makes the color change by phase*/
     font-family: 'Space Mono', monospace;
-    overflow-x: hidden;
+    overflow-x: hidden;/*makes it so that you cant scroll horizontally if there are any elements outside the screen width*/
     min-height: 100vh;
   }
 
-  body {
+  body {/*background has gradients that change as the phases change instead of solid colors*/
     background:
       radial-gradient(ellipse 80% 60% at 50% 0%, rgba(184, 156, 255, 0.12), transparent 60%),
       radial-gradient(ellipse 60% 80% at 100% 100%, rgba(77, 198, 255, 0.08), transparent 60%),
       radial-gradient(ellipse 60% 80% at 0% 100%, rgba(184, 156, 255, 0.06), transparent 60%),
       linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
-    transition: background 1.6s ease, color 1.2s ease;
-    position: relative;
+    transition: background 1.6s ease, color 1.2s ease; /*transitions the backgrounds smoothly for when the timer phases change*/
+    position: relative;/*makes the elements relative to the body*/
   }
 
   /* Scanline overlay — game UI feel */
@@ -806,7 +806,7 @@
         <div class="brand-sub">// system protocol</div>
       </div>
     </div>
-    <a href="https://discord.gg/" target="_blank" rel="noopener" class="btn btn-discord" id="discord-btn">
+    <a href="https://discord.gg/forsakenrblx" target="_blank" rel="noopener" class="btn btn-discord" id="discord-btn">
       <svg viewBox="0 0 24 24" fill="currentColor">
         <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 4.07-3.47 8.03-3.1 11.95c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.44-4.53-.73-8.46-3.1-11.95c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"/>
       </svg>
@@ -876,7 +876,7 @@
       <h2>Azure Has Arrived</h2>
       <div class="event-sub">// system update live</div>
       <div class="btn-row">
-        <a href="https://www.roblox.com/" target="_blank" rel="noopener" class="btn btn-primary">▶ Play on Roblox</a>
+        <a href="https://www.roblox.com/games/18687417158/Forsaken" target="_blank" rel="noopener" class="btn btn-primary">▶ Play on Roblox</a>
         <a href="#info-section" class="btn">📜 View Update Details</a>
       </div>
     </div>
@@ -976,7 +976,7 @@
         <button class="btn" id="copy-link-btn">⎌ Copy Link</button>
         <a href="https://twitter.com/intent/tweet?text=Azure%20update%20drops%20soon%20%E2%80%94%20join%20the%20countdown!" target="_blank" rel="noopener" class="btn">𝕏 Post</a>
       </div>
-      <div class="credits">Fan-made · For the <span>Forsaken</span></div>
+      <div class="credits">Fan-made · For the <span>Forsakened</span></div>
     </div>
   </footer>
 
@@ -1015,14 +1015,14 @@
   // ============ PHASE COPY ============
   const PHASE_MESSAGES = {
     early: [
-      'Azure systems aligning…',
+      'Systems aligning…',
       'Something is forming…',
       'Carrier wave detected…',
       'Pattern stabilizing…',
     ],
     mid: [
       'Update approaching…',
-      'Azure signal detected…',
+      'Signal detected…',
       'Synchronization imminent…',
       'Resonance climbing…',
     ],
@@ -1039,7 +1039,7 @@
 
   function progressLabel(pct) {
     if (pct < 40)  return 'Stabilizing timeline…';
-    if (pct < 75)  return 'Azure systems initializing…';
+    if (pct < 75)  return 'Systems initializing…';
     if (pct < 95)  return 'Critical convergence detected…';
     if (pct < 100) return 'Final synchronization…';
     return 'Synchronization complete';
